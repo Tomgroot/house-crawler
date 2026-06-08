@@ -15,17 +15,22 @@ sns.set_theme(style="whitegrid", palette="muted")
 COLOR_ACCENT = "#E8623A"
 
 
-def _save_or_show(fig: plt.Figure, output: str | None) -> None:
+def _save_or_show(fig: plt.Figure, output: str | None, return_fig: bool = False) -> "plt.Figure | None":
     if output:
         Path(output).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(output, dpi=150, bbox_inches="tight")
         print(f"Chart saved to {output}")
+        plt.close(fig)
+        return None
+    elif return_fig:
+        return fig
     else:
         plt.show()
-    plt.close(fig)
+        plt.close(fig)
+        return None
 
 
-def chart_neighborhoods(df_snap: pd.DataFrame, output: str | None = None) -> None:
+def chart_neighborhoods(df_snap: pd.DataFrame, output: str | None = None, return_fig: bool = False) -> "plt.Figure | None":
     """Bar chart: latest median price per m² by neighborhood, sorted descending."""
     latest = (
         df_snap.sort_values("snapshot_month")
@@ -51,10 +56,10 @@ def chart_neighborhoods(df_snap: pd.DataFrame, output: str | None = None) -> Non
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"€{x:,.0f}"))
     ax.legend()
     fig.tight_layout()
-    _save_or_show(fig, output)
+    return _save_or_show(fig, output, return_fig)
 
 
-def chart_trends(df_snap: pd.DataFrame, output: str | None = None) -> None:
+def chart_trends(df_snap: pd.DataFrame, output: str | None = None, return_fig: bool = False) -> "plt.Figure | None":
     """Line chart: median price per m² over time per neighborhood."""
     df = df_snap.dropna(subset=["median_price_per_m2", "snapshot_month"]).copy()
     df["snapshot_month"] = pd.to_datetime(df["snapshot_month"])
@@ -78,10 +83,10 @@ def chart_trends(df_snap: pd.DataFrame, output: str | None = None) -> None:
     ax.legend(loc="upper left", fontsize=8, ncol=2)
     fig.autofmt_xdate()
     fig.tight_layout()
-    _save_or_show(fig, output)
+    return _save_or_show(fig, output, return_fig)
 
 
-def chart_opportunities(df_scores: pd.DataFrame, output: str | None = None) -> None:
+def chart_opportunities(df_scores: pd.DataFrame, output: str | None = None, return_fig: bool = False) -> "plt.Figure | None":
     """
     Scatter plot: undervaluation vs momentum.
     Bubble size = liquidity. Color = flip score.
@@ -123,10 +128,10 @@ def chart_opportunities(df_scores: pd.DataFrame, output: str | None = None) -> N
     ax.axhline(50, color="gray", linestyle=":", linewidth=0.8)
     ax.axvline(50, color="gray", linestyle=":", linewidth=0.8)
     fig.tight_layout()
-    _save_or_show(fig, output)
+    return _save_or_show(fig, output, return_fig)
 
 
-def chart_proximity(df_snap: pd.DataFrame, df_scores: pd.DataFrame | None = None, output: str | None = None) -> None:
+def chart_proximity(df_snap: pd.DataFrame, df_scores: pd.DataFrame | None = None, output: str | None = None, return_fig: bool = False) -> "plt.Figure | None":
     """
     Scatter: price per m² vs walking distance to Utrecht Centraal.
     Bubble size = active listings (volume). Color = flip score if available.
@@ -193,4 +198,4 @@ def chart_proximity(df_snap: pd.DataFrame, df_scores: pd.DataFrame | None = None
         "Neighborhoods BELOW the trend line are undervalued for their location"
     )
     fig.tight_layout()
-    _save_or_show(fig, output)
+    return _save_or_show(fig, output, return_fig)

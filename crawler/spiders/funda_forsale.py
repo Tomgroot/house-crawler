@@ -5,7 +5,7 @@ from datetime import datetime
 
 import scrapy
 
-from config.neighborhoods import NEIGHBORHOODS
+from config.postal_codes import resolve_neighborhood
 from crawler.items import RawListingItem
 
 logger = logging.getLogger(__name__)
@@ -68,48 +68,48 @@ class FundaForSaleSpider(scrapy.Spider):
     def __init__(self, max_pages: int = 20, neighborhoods: str = "", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.max_pages = int(max_pages)
-        filter_names = [n.strip() for n in neighborhoods.split(",") if n.strip()] if neighborhoods else []
-        self.target_neighborhoods = [
-            n for n in NEIGHBORHOODS if not filter_names or n.name in filter_names
-        ]
+        # Optional filter: only store listings whose postal code resolves to one of these neighborhoods
+        self.filter_names = {n.strip() for n in neighborhoods.split(",") if n.strip()} if neighborhoods else set()
 
     async def start(self):
-        for nbhd in self.target_neighborhoods:
-            for slug in nbhd.slugs:
-                url = self._search_url(slug, page=1)
-                yield scrapy.Request(
-                    url,
-                    callback=self.parse_search_page,
-                    cb_kwargs={"neighborhood": nbhd.name, "slug": slug, "page": 1},
-                )
+        yield scrapy.Request(
+            self._search_url(page=1),
+            callback=self.parse_search_page,
+            cb_kwargs={"page": 1},
+        )
 
     @staticmethod
-    def _search_url(slug: str, page: int) -> str:
-        base = f"https://www.funda.nl/koop/utrecht/{slug}/"
+    def _search_url(page: int) -> str:
+        base = "https://www.funda.nl/koop/utrecht/"
         return base if page == 1 else f"{base}p{page}/"
 
-    def parse_search_page(self, response, neighborhood: str, slug: str, page: int):
+    def parse_search_page(self, response, page: int):
         listings, total = _parse_embedded_listings(response.text)
 
         logger.info(
-            "Neighborhood %s slug %s page %d: %d listings (total %s)",
-            neighborhood, slug, page, len(listings), total,
+            "Utrecht city-wide page %d: %d listings (total %s)",
+            page, len(listings), total,
         )
 
         for listing in listings:
-            item = self._listing_to_item(listing, neighborhood)
-            if item is not None:
-                yield item
+            item = self._listing_to_item(listing)
+            if item is None:
+                continue
+            if self.filter_names:
+                nbhd = resolve_neighborhood(item.get("postal_code", ""))
+                if nbhd not in self.filter_names:
+                    continue
+            yield item
 
         if listings and page < self.max_pages:
             yield scrapy.Request(
-                self._search_url(slug, page + 1),
+                self._search_url(page + 1),
                 callback=self.parse_search_page,
-                cb_kwargs={"neighborhood": neighborhood, "slug": slug, "page": page + 1},
+                cb_kwargs={"page": page + 1},
             )
 
     @staticmethod
-    def _listing_to_item(listing: dict, neighborhood: str) -> RawListingItem | None:
+    def _listing_to_item(listing: dict) -> RawListingItem | None:
         detail_url = listing.get("object_detail_page_relative_url", "")
         m = _FUNDA_ID_RE.search(detail_url)
         if not m:
@@ -143,6 +143,6 @@ class FundaForSaleSpider(scrapy.Spider):
         item["property_type_raw"] = listing.get("object_type")
         item["listing_date_raw"] = listing.get("publish_date")
         item["status"] = "for_sale"
-        item["neighborhood_hint"] = neighborhood
+        item["neighborhood_hint"] = resolve_neighborhood(postal_code)
         item["scraped_at"] = datetime.utcnow()
         return item

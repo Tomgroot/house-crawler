@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class ValidationPipeline:
-    def process_item(self, item: RawListingItem, spider):
+    def process_item(self, item: RawListingItem, spider=None):
         raw = dict(item)
         try:
             validated = ListingValidator(
@@ -42,14 +42,14 @@ class ValidationPipeline:
 
 
 class NeighborhoodPipeline:
-    def open_spider(self, spider):
+    def open_spider(self, spider=None):
         self._session = SessionLocal()
         self._cache: dict[str, int | None] = {}
 
-    def close_spider(self, spider):
+    def close_spider(self, spider=None):
         self._session.close()
 
-    def process_item(self, item: RawListingItem, spider):
+    def process_item(self, item: RawListingItem, spider=None):
         validated: ListingValidator = item.get("_validated")
         if not validated:
             return item
@@ -70,23 +70,30 @@ class NeighborhoodPipeline:
 
 
 class DatabasePipeline:
-    def open_spider(self, spider):
+    @classmethod
+    def from_crawler(cls, crawler):
+        obj = cls()
+        obj.crawler = crawler
+        return obj
+
+    def open_spider(self, spider=None):
         self._session = SessionLocal()
+        spider_name = (spider or self.crawler.spider).name
         self._crawl_run = CrawlRun(
             started_at=datetime.utcnow(),
-            spider_name=spider.name,
+            spider_name=spider_name,
             status="running",
         )
         self._session.add(self._crawl_run)
         self._session.commit()
 
-    def close_spider(self, spider):
+    def close_spider(self, spider=None):
         self._crawl_run.finished_at = datetime.utcnow()
         self._crawl_run.status = "completed"
         self._session.commit()
         self._session.close()
 
-    def process_item(self, item: RawListingItem, spider):
+    def process_item(self, item: RawListingItem, spider=None):
         validated: ListingValidator | None = item.get("_validated")
         if not validated:
             return item

@@ -21,6 +21,7 @@ dependencies = [
     "fake-useragent>=1.4",
     "funda-scraper>=0.3",
     "urllib3==1.26.18",
+    "streamlit>=1.35",
 ]
 
 [project.optional-dependencies]

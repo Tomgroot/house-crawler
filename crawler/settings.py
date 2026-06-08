@@ -33,8 +33,13 @@ COOKIES_ENABLED = True
 
 DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
+    "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
     "crawler.middlewares.user_agent.RotatingUserAgentMiddleware": 400,
+    "crawler.middlewares.retry_on_rate_limit.RateLimitRetryMiddleware": 550,
 }
+
+RETRY_TIMES = 4
+RETRY_HTTP_CODES = [429, 503, 500, 502, 504]
 
 ITEM_PIPELINES = {
     "crawler.pipelines.ValidationPipeline": 100,

@@ -6,12 +6,14 @@ from twisted.internet import threads
 class CurlCffiDownloadHandler:
     """Scrapy download handler backed by curl_cffi, bypasses Akamai bot detection."""
 
+    lazy = True
+
     @classmethod
     def from_settings(cls, settings):
         return cls()
 
     def __init__(self):
-        self._session = Session(impersonate="chrome124")
+        self._session = Session(impersonate="chrome136")
 
     def download_request(self, request, spider):
         return threads.deferToThread(self._fetch, request)

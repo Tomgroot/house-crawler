@@ -1,1 +1,5 @@
 **/__pycache__
+funda_*.log
+house_crawler.db
+venv
+.env

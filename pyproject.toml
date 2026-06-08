@@ -8,18 +8,19 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
     "scrapy>=2.11",
-    "scrapy-playwright>=0.0.40",
-    "playwright>=1.40",
+    "curl_cffi>=0.7",
     "sqlalchemy>=2.0",
     "pydantic>=2.5",
     "pandas>=2.1",
     "numpy>=1.26",
+    "scipy>=1.11",
     "matplotlib>=3.8",
     "seaborn>=0.13",
     "click>=8.1",
     "python-dotenv>=1.0",
     "fake-useragent>=1.4",
     "funda-scraper>=0.3",
+    "urllib3==1.26.18",
 ]
 
 [project.optional-dependencies]

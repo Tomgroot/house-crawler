@@ -10,14 +10,11 @@ NEWSPIDER_MODULE = "crawler.spiders"
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
-# Playwright for JavaScript rendering / bot evasion
+# curl_cffi-backed handler bypasses Akamai bot detection at TLS fingerprint level
 DOWNLOAD_HANDLERS = {
-    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    "https": "crawler.handlers.curl_cffi_handler.CurlCffiDownloadHandler",
+    "http": "crawler.handlers.curl_cffi_handler.CurlCffiDownloadHandler",
 }
-PLAYWRIGHT_BROWSER_TYPE = "chromium"
-PLAYWRIGHT_LAUNCH_OPTIONS = {"headless": True}
-PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT = 30_000
 
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 

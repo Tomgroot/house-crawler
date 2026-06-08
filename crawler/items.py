@@ -23,6 +23,9 @@ class RawListingItem(scrapy.Item):
     energy_label_raw = scrapy.Field()
     status = scrapy.Field()       # "for_sale" or "sold"
     sold_date_raw = scrapy.Field()
+    # pipeline-internal fields
+    _validated = scrapy.Field()
+    _neighborhood_id = scrapy.Field()
     sold_price_raw = scrapy.Field()
     neighborhood_hint = scrapy.Field()  # logical neighborhood name from spider
     scraped_at = scrapy.Field()

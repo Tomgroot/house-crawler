@@ -171,6 +171,69 @@ def analyze_scores():
 
 
 # ---------------------------------------------------------------------------
+# listings commands
+# ---------------------------------------------------------------------------
+
+@cli.group()
+def listings():
+    """Browse crawled listings."""
+
+
+@listings.command("list")
+@click.option("--status", default="for_sale", type=click.Choice(["for_sale", "sold", "all"]), show_default=True, help="Filter by listing status.")
+@click.option("--neighborhood", default=None, help="Filter by neighborhood name (partial match).")
+@click.option("--limit", default=50, show_default=True, help="Max rows to show.")
+@click.option("--sort", default="last_seen_at", type=click.Choice(["last_seen_at", "price", "price_per_m2", "listing_date"]), show_default=True, help="Sort column.")
+def listings_list(status: str, neighborhood: str | None, limit: int, sort: str):
+    """List crawled listings."""
+    from sqlalchemy import desc
+
+    session = SessionLocal()
+    try:
+        q = session.query(Listing)
+        if status != "all":
+            q = q.filter(Listing.status == status)
+        if neighborhood:
+            nbhd = session.query(Neighborhood).filter(Neighborhood.name.ilike(f"%{neighborhood}%")).first()
+            if nbhd is None:
+                click.echo(f"No neighborhood matching '{neighborhood}' found.", err=True)
+                return
+            q = q.filter(Listing.neighborhood_id == nbhd.id)
+
+        sort_col = {
+            "last_seen_at": Listing.last_seen_at,
+            "price": Listing.price,
+            "price_per_m2": Listing.price_per_m2,
+            "listing_date": Listing.listing_date,
+        }[sort]
+        q = q.order_by(desc(sort_col))
+        rows = q.limit(limit).all()
+
+        if not rows:
+            click.echo("No listings found.")
+            return
+
+        nbhd_map = {n.id: n.name for n in session.query(Neighborhood).all()}
+
+        header = f"{'Address':<35} {'Neighborhood':<22} {'Status':<8} {'Price':>10} {'€/m²':>7} {'m²':>5} {'Rooms':>5} {'Date':<12} {'URL'}"
+        click.echo(header)
+        click.echo("-" * len(header))
+        for r in rows:
+            nbhd_name = nbhd_map.get(r.neighborhood_id, "")
+            price = f"€{r.price:,}" if r.price else "-"
+            ppm2 = f"{r.price_per_m2:,.0f}" if r.price_per_m2 else "-"
+            size = f"{r.size_m2:.0f}" if r.size_m2 else "-"
+            rooms = str(r.num_rooms) if r.num_rooms else "-"
+            dt = str(r.listing_date or r.sold_date or "")
+            click.echo(
+                f"{(r.address or ''):<35} {nbhd_name:<22} {r.status:<8} {price:>10} {ppm2:>7} {size:>5} {rooms:>5} {dt:<12} {r.url}"
+            )
+        click.echo(f"\n{len(rows)} listing(s) shown.")
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
 # report commands
 # ---------------------------------------------------------------------------
 

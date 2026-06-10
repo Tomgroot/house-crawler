@@ -86,44 +86,41 @@ def crawl():
     """Run Scrapy spiders to collect listings."""
 
 
-def _run_spider(spider_name: str, max_pages: int, neighborhoods: str) -> None:
+def _run_spider(mode: str, max_pages: int) -> None:
     cmd = [
-        sys.executable, "-m", "scrapy", "crawl", spider_name,
+        sys.executable, "-m", "scrapy", "crawl", "funda",
+        "-a", f"mode={mode}",
         "-a", f"max_pages={max_pages}",
-        "-a", f"neighborhoods={neighborhoods}",
-        "--logfile", f"{spider_name}.log",
+        "--logfile", f"funda_{mode}.log",
     ]
-    click.echo(f"Running spider: {spider_name} (max_pages={max_pages})")
+    click.echo(f"Running spider: funda mode={mode} (max_pages={max_pages})")
     result = subprocess.run(cmd, cwd=str(Path(__file__).parents[1]))
     if result.returncode != 0:
-        click.echo(f"Spider {spider_name} exited with code {result.returncode}", err=True)
+        click.echo(f"Spider funda ({mode}) exited with code {result.returncode}", err=True)
         sys.exit(result.returncode)
-    click.echo(f"Spider {spider_name} completed.")
+    click.echo(f"Spider funda ({mode}) completed.")
 
 
 @crawl.command("forsale")
-@click.option("--max-pages", default=20, show_default=True, help="Max search result pages per neighborhood slug.")
-@click.option("--neighborhoods", default="", help="Comma-separated neighborhood names to restrict crawl.")
-def crawl_forsale(max_pages: int, neighborhoods: str):
+@click.option("--max-pages", default=20, show_default=True, help="Max search result pages.")
+def crawl_forsale(max_pages: int):
     """Scrape active for-sale listings from Funda."""
-    _run_spider("funda_forsale", max_pages, neighborhoods)
+    _run_spider("for_sale", max_pages)
 
 
 @crawl.command("sold")
-@click.option("--max-pages", default=10, show_default=True, help="Max pages of sold listings per slug.")
-@click.option("--neighborhoods", default="", help="Comma-separated neighborhood names to restrict crawl.")
-def crawl_sold(max_pages: int, neighborhoods: str):
+@click.option("--max-pages", default=10, show_default=True, help="Max pages of sold listings.")
+def crawl_sold(max_pages: int):
     """Scrape recently sold listings from Funda."""
-    _run_spider("funda_sold", max_pages, neighborhoods)
+    _run_spider("sold", max_pages)
 
 
 @crawl.command("all")
 @click.option("--max-pages", default=20, show_default=True)
-@click.option("--neighborhoods", default="")
-def crawl_all(max_pages: int, neighborhoods: str):
+def crawl_all(max_pages: int):
     """Run both for-sale and sold spiders sequentially."""
-    _run_spider("funda_forsale", max_pages, neighborhoods)
-    _run_spider("funda_sold", min(max_pages, 10), neighborhoods)
+    _run_spider("for_sale", max_pages)
+    _run_spider("sold", min(max_pages, 10))
 
 
 # ---------------------------------------------------------------------------

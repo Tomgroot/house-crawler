@@ -27,6 +27,7 @@ class CurlCffiDownloadHandler:
             method=request.method,
             url=request.url,
             headers=headers,
+            data=request.body or None,
         )
         return HtmlResponse(
             url=request.url,

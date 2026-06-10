@@ -139,8 +139,20 @@ class DatabasePipeline:
                 listing.sold_date = validated.sold_date
             if validated.sold_price:
                 listing.sold_price = validated.sold_price
-            if neighborhood_id and not listing.neighborhood_id:
+            if neighborhood_id:
                 listing.neighborhood_id = neighborhood_id
+            if validated.postal_code:
+                listing.postal_code = validated.postal_code
+            if validated.size_m2 is not None:
+                listing.size_m2 = validated.size_m2
+            if validated.num_rooms is not None:
+                listing.num_rooms = validated.num_rooms
+            if validated.build_year is not None:
+                listing.build_year = validated.build_year
+            if validated.energy_label:
+                listing.energy_label = validated.energy_label
+            if validated.property_type and validated.property_type != "unknown":
+                listing.property_type = validated.property_type
             if price_changed:
                 listing.price = validated.price
                 listing.price_per_m2 = validated.price_per_m2

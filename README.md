@@ -45,6 +45,14 @@ house-crawler report opportunities    # undervaluation vs momentum bubble chart
 house-crawler report proximity        # price vs distance to Utrecht Centraal
 ```
 
+## Streamlit UI
+
+```bash
+streamlit run app.py
+```
+
+Opens a dashboard at `http://localhost:8501` with neighborhood scores, charts, and crawl controls.
+
 ## Database status
 
 ```bash

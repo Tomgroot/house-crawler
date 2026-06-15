@@ -86,14 +86,29 @@ def crawl():
     """Run Scrapy spiders to collect listings."""
 
 
-def _run_spider(mode: str, max_pages: int) -> None:
+def _run_spider(mode: str, max_pages: int, remember_page: bool = False, reset_page: bool = False) -> None:
+    from crawler.state import get_last_page, reset_mode
+
+    if reset_page:
+        reset_mode(mode)
+        click.echo(f"Page state for '{mode}' has been reset.")
+
+    start_page = 1
+    if remember_page:
+        last = get_last_page(mode)
+        start_page = last + 1 if last > 0 else 1
+        if last > 0:
+            click.echo(f"Resuming from page {start_page} (last crawled page: {last})")
+
     cmd = [
         sys.executable, "-m", "scrapy", "crawl", "funda",
         "-a", f"mode={mode}",
         "-a", f"max_pages={max_pages}",
+        "-a", f"start_page={start_page}",
+        "-a", f"remember_page={remember_page}",
         "--logfile", f"funda_{mode}.log",
     ]
-    click.echo(f"Running spider: funda mode={mode} (max_pages={max_pages})")
+    click.echo(f"Running spider: funda mode={mode} (max_pages={max_pages}, start_page={start_page})")
     result = subprocess.run(cmd, cwd=str(Path(__file__).parents[1]))
     if result.returncode != 0:
         click.echo(f"Spider funda ({mode}) exited with code {result.returncode}", err=True)
@@ -103,24 +118,30 @@ def _run_spider(mode: str, max_pages: int) -> None:
 
 @crawl.command("forsale")
 @click.option("--max-pages", default=20, show_default=True, help="Max search result pages.")
-def crawl_forsale(max_pages: int):
+@click.option("--remember-page", is_flag=True, default=False, help="Resume from the last crawled page and save progress.")
+@click.option("--reset-page", is_flag=True, default=False, help="Reset the stored page state before crawling.")
+def crawl_forsale(max_pages: int, remember_page: bool, reset_page: bool):
     """Scrape active for-sale listings from Funda."""
-    _run_spider("for_sale", max_pages)
+    _run_spider("for_sale", max_pages, remember_page=remember_page, reset_page=reset_page)
 
 
 @crawl.command("sold")
 @click.option("--max-pages", default=10, show_default=True, help="Max pages of sold listings.")
-def crawl_sold(max_pages: int):
+@click.option("--remember-page", is_flag=True, default=False, help="Resume from the last crawled page and save progress.")
+@click.option("--reset-page", is_flag=True, default=False, help="Reset the stored page state before crawling.")
+def crawl_sold(max_pages: int, remember_page: bool, reset_page: bool):
     """Scrape recently sold listings from Funda."""
-    _run_spider("sold", max_pages)
+    _run_spider("sold", max_pages, remember_page=remember_page, reset_page=reset_page)
 
 
 @crawl.command("all")
 @click.option("--max-pages", default=20, show_default=True)
-def crawl_all(max_pages: int):
+@click.option("--remember-page", is_flag=True, default=False, help="Resume from the last crawled page and save progress.")
+@click.option("--reset-page", is_flag=True, default=False, help="Reset the stored page state before crawling.")
+def crawl_all(max_pages: int, remember_page: bool, reset_page: bool):
     """Run both for-sale and sold spiders sequentially."""
-    _run_spider("for_sale", max_pages)
-    _run_spider("sold", min(max_pages, 10))
+    _run_spider("for_sale", max_pages, remember_page=remember_page, reset_page=reset_page)
+    _run_spider("sold", min(max_pages, 10), remember_page=remember_page, reset_page=reset_page)
 
 
 # ---------------------------------------------------------------------------

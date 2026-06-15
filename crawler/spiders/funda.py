@@ -66,10 +66,12 @@ class FundaSpider(scrapy.Spider):
         "CLOSESPIDER_ERRORCOUNT": 5,
     }
 
-    def __init__(self, mode: str = "for_sale", max_pages: int = 20, *args, **kwargs):
+    def __init__(self, mode: str = "for_sale", max_pages: int = 20, start_page: int = 1, remember_page: str = "false", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mode = mode
         self.max_pages = int(max_pages)
+        self.start_page = int(start_page)
+        self.remember_page = str(remember_page).lower() in ("1", "true", "yes")
 
     def _search_url(self, page: int) -> str:
         base = _BASE_SOLD if self.mode == "sold" else _BASE_FOR_SALE
@@ -78,9 +80,9 @@ class FundaSpider(scrapy.Spider):
         return f"{base}&search_result={page}"
 
     async def start(self):
-        url = self._search_url(page=1)
-        logger.info("Crawling %s", url)
-        yield scrapy.Request(url, callback=self.parse_search_page, cb_kwargs={"page": 1})
+        url = self._search_url(page=self.start_page)
+        logger.info("Crawling %s (starting from page %d)", url, self.start_page)
+        yield scrapy.Request(url, callback=self.parse_search_page, cb_kwargs={"page": self.start_page})
 
     def parse_search_page(self, response, page: int):
         logger.info("Fetching: %s", response.url)
@@ -90,6 +92,10 @@ class FundaSpider(scrapy.Spider):
             "[%s] page=%d — found %d listings (total %s)",
             self.mode, page, len(listings), total,
         )
+
+        if self.remember_page and listings:
+            from crawler.state import save_page
+            save_page(self.mode, page)
 
         for listing in listings:
             if self.mode == "sold":

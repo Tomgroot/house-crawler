@@ -1,0 +1,45 @@
+name: Claude Code — Implement Issue
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch_prefix: "claude/"
+          use_sticky_comment: true
+          track_progress: true
+          show_full_output: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE NUMBER: #${{ github.event.issue.number }}
+            
+            Implement the feature or fix described in GitHub issue #${{ github.event.issue.number }}:
+
+            Title: ${{ github.event.issue.title }}
+
+            ${{ github.event.issue.body }}
+
+            Requirements:
+            - Create a focused, minimal implementation that directly addresses the issue.
+            - Follow the existing code style and conventions in this repository.
+            - Write the code, commit it, and open a pull request that references the issue.

@@ -1,7 +1,5 @@
 """Streamlit dashboard for house-crawler — run with: streamlit run app.py"""
 
-import subprocess
-import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -9,9 +7,6 @@ import pandas as pd
 import streamlit as st
 
 ROOT = Path(__file__).parent
-sys.path.insert(0, str(ROOT))
-
-CLI = str(Path(sys.executable).parent / "house-crawler")
 
 st.set_page_config(
     page_title="House Crawler",
@@ -81,44 +76,35 @@ def get_db_stats() -> dict:
 
 
 @st.cache_data(ttl=60)
-def get_last_crawl() -> dict | None:
+def get_crawl_history() -> pd.DataFrame:
     from db.engine import SessionLocal
     from db.models import CrawlRun
 
     session = SessionLocal()
     try:
-        run = session.query(CrawlRun).order_by(CrawlRun.started_at.desc()).first()
-        if run is None:
-            return None
-        return {
-            "spider": run.spider_name,
-            "started_at": run.started_at,
-            "status": run.status,
-            "found": run.listings_found,
-            "new": run.listings_new,
-            "updated": run.listings_updated,
-            "errors": run.errors,
-        }
+        runs = session.query(CrawlRun).order_by(CrawlRun.started_at.desc()).all()
+        if not runs:
+            return pd.DataFrame()
+        rows = []
+        for r in runs:
+            duration = None
+            if r.finished_at and r.started_at:
+                secs = int((r.finished_at - r.started_at).total_seconds())
+                duration = f"{secs // 60}m {secs % 60}s"
+            rows.append({
+                "Started": r.started_at,
+                "Spider": r.spider_name or "—",
+                "Status": r.status,
+                "New": r.listings_new,
+                "Updated": r.listings_updated,
+                "Found": r.listings_found,
+                "Max pages": r.max_pages,
+                "Duration": duration or "—",
+                "Errors": r.errors,
+            })
+        return pd.DataFrame(rows)
     finally:
         session.close()
-
-
-def _run_command(label: str, cmd: list[str]) -> None:
-    with st.status(label, expanded=True) as status:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd=str(ROOT),
-        )
-        output = (result.stdout or "") + (result.stderr or "")
-        if result.returncode == 0:
-            status.update(label=f"✅ {label} — done", state="complete")
-        else:
-            status.update(label=f"❌ {label} — failed (exit {result.returncode})", state="error")
-        if output.strip():
-            st.code(output, language=None)
-    st.cache_data.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +116,7 @@ if page == "Dashboard":
 
     try:
         stats = get_db_stats()
-        last = get_last_crawl()
+        history = get_crawl_history()
     except Exception as e:
         st.error(f"Database error: {e}\n\nRun `house-crawler db init` first.")
         st.stop()
@@ -142,53 +128,26 @@ if page == "Dashboard":
     col4.metric("Crawl runs", stats.get("crawl_runs", 0))
 
     st.divider()
+    st.subheader("Crawl history")
+    st.caption("Crawls run automatically every Sunday at 02:00 UTC.")
 
-    if last:
-        status_emoji = {"completed": "✅", "running": "⏳", "failed": "❌"}.get(last["status"], "❓")
-        st.subheader(f"Last crawl {status_emoji}")
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Spider", last["spider"] or "—")
-        c2.metric("Found", last["found"])
-        c3.metric("New", last["new"])
-        c4.metric("Updated", last["updated"])
-        st.caption(f"Started at {last['started_at']}")
+    if history.empty:
+        st.info("No crawls run yet. The first crawl will run automatically on Sunday at 02:00 UTC.")
     else:
-        st.info("No crawls run yet.")
-
-    st.divider()
-    st.subheader("Actions")
-
-    col_a, col_b, col_c, col_d = st.columns(4)
-
-    with col_a:
-        max_pages = st.number_input("Max pages", min_value=1, max_value=50, value=20, step=1)
-
-    with col_b:
-        st.write("")
-        st.write("")
-        if st.button("🕷 Crawl for-sale", use_container_width=True):
-            _run_command(
-                "Crawling for-sale listings",
-                [CLI, "crawl", "forsale", "--max-pages", str(max_pages)],
-            )
-
-    with col_c:
-        st.write("")
-        st.write("")
-        if st.button("🕷 Crawl sold", use_container_width=True):
-            _run_command(
-                "Crawling sold listings",
-                [CLI, "crawl", "sold", "--max-pages", str(max_pages)],
-            )
-
-    with col_d:
-        st.write("")
-        st.write("")
-        if st.button("📊 Run analysis", use_container_width=True):
-            _run_command(
-                "Computing snapshots & scores",
-                [CLI, "analyze", "snapshots"],
-            )
+        status_icons = {"completed": "✅", "running": "⏳", "failed": "❌"}
+        history["Status"] = history["Status"].map(lambda s: f"{status_icons.get(s, '❓')} {s}")
+        st.dataframe(
+            history,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Started": st.column_config.DatetimeColumn("Started (UTC)", format="YYYY-MM-DD HH:mm"),
+                "New": st.column_config.NumberColumn("New listings"),
+                "Updated": st.column_config.NumberColumn("Updated"),
+                "Found": st.column_config.NumberColumn("Total found"),
+                "Max pages": st.column_config.NumberColumn("Pages crawled"),
+            },
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -200,7 +159,7 @@ elif page == "Neighborhoods":
 
     df = get_snapshots()
     if df.empty:
-        st.warning("No snapshot data yet. Run a crawl and then **analyze snapshots** from the Dashboard.")
+        st.warning("No snapshot data yet. Snapshots are computed automatically after each weekly crawl.")
         st.stop()
 
     from analysis.charts import chart_neighborhoods
@@ -219,7 +178,7 @@ elif page == "Trends":
 
     df = get_snapshots()
     if df.empty:
-        st.warning("No snapshot data yet. Run a crawl and then **analyze snapshots** from the Dashboard.")
+        st.warning("No snapshot data yet. Snapshots are computed automatically after each weekly crawl.")
         st.stop()
 
     neighborhoods = sorted(df["neighborhood"].dropna().unique().tolist())

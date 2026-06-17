@@ -1,0 +1,2 @@
+# Run the full crawl pipeline every Sunday at 02:00 UTC
+0 2 * * 0 /app/scripts/crawl.sh >> /proc/1/fd/1 2>&1

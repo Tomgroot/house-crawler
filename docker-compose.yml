@@ -1,0 +1,27 @@
+services:
+  app:
+    build: .
+    entrypoint: /app/scripts/app-entrypoint.sh
+    ports:
+      - "8501:8501"
+    volumes:
+      - data:/data
+    environment:
+      DATABASE_URL: sqlite:////data/house_crawler.db
+      MAX_PAGES: "20"
+      LOG_LEVEL: INFO
+    restart: unless-stopped
+
+  cron:
+    build: .
+    command: supercronic /app/crontab
+    volumes:
+      - data:/data
+    environment:
+      DATABASE_URL: sqlite:////data/house_crawler.db
+      MAX_PAGES: "20"
+      LOG_LEVEL: INFO
+    restart: unless-stopped
+
+volumes:
+  data:

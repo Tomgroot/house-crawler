@@ -1,0 +1,12 @@
+.git
+venv
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.log
+*.db
+.env
+house_crawler.egg-info
+.pytest_cache
+tests

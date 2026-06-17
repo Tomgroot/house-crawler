@@ -1,8 +1,8 @@
 import json
+import os
 import subprocess
 import sys
 from datetime import date, datetime
-from pathlib import Path
 
 import click
 from sqlalchemy import text
@@ -109,7 +109,8 @@ def _run_spider(mode: str, max_pages: int, remember_page: bool = False, reset_pa
         "--logfile", f"funda_{mode}.log",
     ]
     click.echo(f"Running spider: funda mode={mode} (max_pages={max_pages}, start_page={start_page})")
-    result = subprocess.run(cmd, cwd=str(Path(__file__).parents[1]))
+    env = {**os.environ, "SCRAPY_SETTINGS_MODULE": "crawler.settings"}
+    result = subprocess.run(cmd, env=env)
     if result.returncode != 0:
         click.echo(f"Spider funda ({mode}) exited with code {result.returncode}", err=True)
         sys.exit(result.returncode)

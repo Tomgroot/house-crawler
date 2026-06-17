@@ -29,3 +29,14 @@ def init_db() -> None:
     from db import models  # noqa: F401 — ensures models are registered before create_all
 
     Base.metadata.create_all(bind=_engine)
+    _migrate()
+
+
+def _migrate() -> None:
+    from sqlalchemy import inspect, text
+
+    with _engine.connect() as conn:
+        cols = [c["name"] for c in inspect(_engine).get_columns("crawl_runs")]
+        if "max_pages" not in cols:
+            conn.execute(text("ALTER TABLE crawl_runs ADD COLUMN max_pages INTEGER"))
+            conn.commit()

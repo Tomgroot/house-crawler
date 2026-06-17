@@ -112,3 +112,4 @@ class CrawlRun(Base):
     listings_updated: Mapped[int] = mapped_column(Integer, default=0)
     errors: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(20), default="running")  # running / completed / failed
+    max_pages: Mapped[int | None] = mapped_column(Integer)

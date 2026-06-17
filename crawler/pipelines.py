@@ -78,11 +78,12 @@ class DatabasePipeline:
 
     def open_spider(self, spider=None):
         self._session = SessionLocal()
-        spider_name = (spider or self.crawler.spider).name
+        sp = spider or self.crawler.spider
         self._crawl_run = CrawlRun(
             started_at=datetime.utcnow(),
-            spider_name=spider_name,
+            spider_name=sp.name,
             status="running",
+            max_pages=getattr(sp, "max_pages", None),
         )
         self._session.add(self._crawl_run)
         self._session.commit()

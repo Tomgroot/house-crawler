@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    image: ghcr.io/tomgroot/house-crawler:latest
     entrypoint: /app/scripts/app-entrypoint.sh
     ports:
       - "8501:8501"
@@ -11,9 +12,12 @@ services:
       MAX_PAGES: "20"
       LOG_LEVEL: INFO
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 
   cron:
     build: .
+    image: ghcr.io/tomgroot/house-crawler:latest
     command: supercronic /app/crontab
     volumes:
       - data:/data
@@ -21,6 +25,18 @@ services:
       DATABASE_URL: sqlite:////data/house_crawler.db
       MAX_PAGES: "20"
       LOG_LEVEL: INFO
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WATCHTOWER_POLL_INTERVAL: "300"
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_LABEL_ENABLE: "true"
     restart: unless-stopped
 
 volumes:

@@ -16,6 +16,11 @@ COPY . .
 
 RUN pip install --no-cache-dir .
 
+# funda-scraper pins urllib3==1.26 (resolves to the exact 1.26.0 release),
+# whose vendored six.py is broken under Python 3.12's import system.
+# Force a patched 1.26.x release after install — funda-scraper works fine with it.
+RUN pip install --no-cache-dir --force-reinstall "urllib3>=1.26.18,<2"
+
 # Persistent data directory (SQLite DB lives here via volume mount)
 RUN mkdir -p /data
 

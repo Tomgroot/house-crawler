@@ -2,19 +2,21 @@ Metadata-Version: 2.4
 Name: house-crawler
 Version: 0.1.0
 Requires-Python: >=3.11
+Requires-Dist: urllib3<2,>=1.26
 Requires-Dist: scrapy>=2.11
-Requires-Dist: scrapy-playwright>=0.0.40
-Requires-Dist: playwright>=1.40
+Requires-Dist: curl_cffi>=0.7
 Requires-Dist: sqlalchemy>=2.0
 Requires-Dist: pydantic>=2.5
 Requires-Dist: pandas>=2.1
 Requires-Dist: numpy>=1.26
+Requires-Dist: scipy>=1.11
 Requires-Dist: matplotlib>=3.8
 Requires-Dist: seaborn>=0.13
 Requires-Dist: click>=8.1
 Requires-Dist: python-dotenv>=1.0
 Requires-Dist: fake-useragent>=1.4
 Requires-Dist: funda-scraper>=0.3
+Requires-Dist: streamlit>=1.35
 Provides-Extra: dev
 Requires-Dist: pytest>=7.4; extra == "dev"
 Requires-Dist: pytest-cov>=4.1; extra == "dev"

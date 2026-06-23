@@ -14,11 +14,14 @@ crawler/__init__.py
 crawler/items.py
 crawler/pipelines.py
 crawler/settings.py
+crawler/state.py
+crawler/handlers/__init__.py
+crawler/handlers/curl_cffi_handler.py
 crawler/middlewares/__init__.py
+crawler/middlewares/retry_on_rate_limit.py
 crawler/middlewares/user_agent.py
 crawler/spiders/__init__.py
-crawler/spiders/funda_forsale.py
-crawler/spiders/funda_sold.py
+crawler/spiders/funda.py
 db/__init__.py
 db/engine.py
 db/models.py

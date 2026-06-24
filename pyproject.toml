@@ -32,6 +32,9 @@ dev = [
 [project.scripts]
 house-crawler = "cli.main:cli"
 
+[tool.setuptools]
+py-modules = ["notifications"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["crawler*", "db*", "analysis*", "config*", "cli*"]

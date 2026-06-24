@@ -11,6 +11,9 @@ services:
       DATABASE_URL: sqlite:////data/house_crawler.db
       MAX_PAGES: "20"
       LOG_LEVEL: INFO
+      HA_WEBHOOK_URL: ""
+      HA_DEAL_THRESHOLD: "0.15"
+      HA_MIN_SIZE_M2: "60"
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
@@ -25,6 +28,9 @@ services:
       DATABASE_URL: sqlite:////data/house_crawler.db
       MAX_PAGES: "20"
       LOG_LEVEL: INFO
+      HA_WEBHOOK_URL: ""
+      HA_DEAL_THRESHOLD: "0.15"
+      HA_MIN_SIZE_M2: "60"
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

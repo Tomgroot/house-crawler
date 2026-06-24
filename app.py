@@ -24,7 +24,7 @@ st.sidebar.caption("Utrecht house price tracker")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["Dashboard", "Neighborhoods", "Trends", "Opportunities", "Proximity", "Listings"],
+    ["Dashboard", "Neighborhoods", "Trends", "Opportunities", "Proximity", "Price vs Size", "Listings"],
     label_visibility="collapsed",
 )
 
@@ -244,6 +244,31 @@ elif page == "Proximity":
 
     from analysis.charts import chart_proximity
     fig = chart_proximity(df_snap, df_scores if not df_scores.empty else None, return_fig=True)
+    if fig:
+        st.pyplot(fig, use_container_width=True)
+        plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Price vs Size scatter
+# ---------------------------------------------------------------------------
+
+elif page == "Price vs Size":
+    st.title("Price vs Living Space")
+    st.caption("Each dot is an individual listing. Correlation between total house price and living space (m²).")
+
+    try:
+        df = get_listings("All", "All")
+    except Exception as e:
+        st.error(f"Failed to load listings: {e}")
+        st.stop()
+
+    if df.empty:
+        st.info("No listings available.")
+        st.stop()
+
+    from analysis.charts import chart_price_vs_size
+    fig = chart_price_vs_size(df, return_fig=True)
     if fig:
         st.pyplot(fig, use_container_width=True)
         plt.close(fig)

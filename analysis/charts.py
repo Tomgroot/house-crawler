@@ -131,6 +131,40 @@ def chart_opportunities(df_scores: pd.DataFrame, output: str | None = None, retu
     return _save_or_show(fig, output, return_fig)
 
 
+def chart_price_vs_size(df_listings: pd.DataFrame, output: str | None = None, return_fig: bool = False) -> "plt.Figure | None":
+    """Scatter plot: individual house price vs living space (m²)."""
+    df = df_listings.dropna(subset=["price", "size_m2"]).copy()
+    df = df[(df["price"] > 0) & (df["size_m2"] > 0)]
+
+    if df.empty:
+        logger.warning("No listings with both price and size_m2 data.")
+        return
+
+    fig, ax = plt.subplots(figsize=(11, 7))
+    ax.scatter(
+        df["size_m2"],
+        df["price"],
+        alpha=0.45,
+        s=18,
+        color=COLOR_ACCENT,
+        edgecolors="none",
+    )
+
+    if len(df) >= 3:
+        z = np.polyfit(df["size_m2"], df["price"], 1)
+        p = np.poly1d(z)
+        x_line = np.linspace(df["size_m2"].min(), df["size_m2"].max(), 200)
+        ax.plot(x_line, p(x_line), color="steelblue", linestyle="--", linewidth=1.5, label="Trend")
+        ax.legend()
+
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"€{v:,.0f}"))
+    ax.set_xlabel("Living space (m²)")
+    ax.set_ylabel("House price (€)")
+    ax.set_title(f"Price vs Living Space — {len(df):,} listings")
+    fig.tight_layout()
+    return _save_or_show(fig, output, return_fig)
+
+
 def chart_proximity(df_snap: pd.DataFrame, df_scores: pd.DataFrame | None = None, output: str | None = None, return_fig: bool = False) -> "plt.Figure | None":
     """
     Scatter: price per m² vs walking distance to Utrecht Centraal.

@@ -317,3 +317,48 @@ def report_proximity(output: str | None):
         return
     df_scores = compute_scores()
     chart_proximity(df_snap, df_scores if not df_scores.empty else None, output)
+
+
+# ---------------------------------------------------------------------------
+# notify command
+# ---------------------------------------------------------------------------
+
+@cli.command("notify")
+@click.option(
+    "--deal-threshold",
+    default=float(os.getenv("HA_DEAL_THRESHOLD", "0.15")),
+    show_default=True,
+    help="Min fraction below comparable median to trigger alert (e.g. 0.15 = 15%).",
+)
+@click.option(
+    "--min-size",
+    default=float(os.getenv("HA_MIN_SIZE_M2", "60")),
+    show_default=True,
+    help="Minimum house size in m² to consider.",
+)
+@click.option(
+    "--since",
+    default=None,
+    help="ISO datetime to scan from (overrides stored state, e.g. 2026-01-01T00:00:00).",
+)
+@click.option("--dry-run", is_flag=True, default=False, help="Find deals but do not send webhooks.")
+def notify(deal_threshold: float, min_size: float, since: str | None, dry_run: bool):
+    """Find underpriced for-sale listings and notify Home Assistant via webhook."""
+    import notifications as notif
+
+    since_dt = None
+    if since:
+        from datetime import datetime
+        since_dt = datetime.fromisoformat(since)
+
+    found, sent = notif.run_notify(
+        deal_threshold=deal_threshold,
+        min_size_m2=min_size,
+        since_dt=since_dt,
+        dry_run=dry_run,
+    )
+
+    if dry_run:
+        click.echo(f"Dry run: {found} deal(s) found (no webhooks sent).")
+    else:
+        click.echo(f"Found {found} deal(s), sent {sent} notification(s).")
